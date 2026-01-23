@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Extractor Pro</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="logo-icon">🧲</span>
+        <h1>Lead Extractor <span class="badge">PRO</span></h1>
+      </div>
+      <p>Elite lead extraction with deep scanning</p>
+    </header>
+
+    <main>
+      <!-- Stats -->
+      <div class="stats-container">
+        <div class="stat-box stat-email">
+          <span class="count" id="email-count">0</span>
+          <span class="label">📧 Emails</span>
+        </div>
+        <div class="stat-box stat-phone">
+          <span class="count" id="phone-count">0</span>
+          <span class="label">📞 Phones</span>
+        </div>
+      </div>
+
+      <!-- Deep Scan Toggle -->
+      <div class="toggle-container">
+        <label class="toggle-label" for="deep-scan-toggle">
+          <span class="toggle-text">
+            <strong>Deep Scan</strong>
+            <small>Auto-scroll to load lazy content</small>
+          </span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="deep-scan-toggle">
+            <span class="slider"></span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-bar" id="progress-bar" style="display: none;">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button id="scan-btn" class="primary-btn">
+          <span class="icon">🔍</span> Scan Page
+        </button>
+        <div class="action-row">
+          <button id="download-btn" class="secondary-btn" disabled>
+            <span class="icon">⬇️</span> Download CSV
+          </button>
+          <button id="clear-btn" class="danger-btn">
+            <span class="icon">🗑️</span> Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="status-msg" class="status"></div>
+    </main>
+
+    <footer>
+      <span>v2.0 • Elite Edition</span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>
