@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Lead Magnet Extractor",
-  "version": "2.0",
-  "description": "Elite lead extraction tool with deep scanning, DOM highlighting, and smart obfuscation detection.",
+  "version": "3.0",
+  "description": "Enterprise lead extraction with deep scanning, smart name detection, webhook integration, and Excel export.",
   "permissions": [
     "activeTab",
     "scripting",

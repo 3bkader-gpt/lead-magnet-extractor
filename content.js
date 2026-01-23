@@ -1,6 +1,6 @@
 // ============================================================================
-// LEAD MAGNET EXTRACTOR - ELITE CONTENT SCRIPT
-// Features: Deep Scan, DOM Highlighting, Smart Obfuscation Detection
+// LEAD MAGNET EXTRACTOR - ENTERPRISE CONTENT SCRIPT
+// Features: Deep Scan, DOM Highlighting, Obfuscation Detection, Name Extraction
 // ============================================================================
 
 (() => {
@@ -17,7 +17,8 @@
         HIGHLIGHT_CLASS: 'lme-highlight',
         HIGHLIGHT_EMAIL_CLASS: 'lme-highlight-email',
         HIGHLIGHT_PHONE_CLASS: 'lme-highlight-phone',
-        STYLES_ID: 'lme-injected-styles'
+        STYLES_ID: 'lme-injected-styles',
+        NAME_CONTEXT_LENGTH: 80
     };
 
     // ============================================================================
@@ -27,11 +28,15 @@
     // Standard email pattern
     const EMAIL_STANDARD = /[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}/g;
 
-    // Obfuscated email patterns: user [at] domain [dot] com, user(at)domain(dot)com, etc.
+    // Obfuscated email patterns
     const EMAIL_OBFUSCATED = /[a-zA-Z0-9._+-]+\s*[\[\(]?\s*(?:at|AT)\s*[\]\)]?\s*[a-zA-Z0-9.-]+\s*[\[\(]?\s*(?:dot|DOT)\s*[\]\)]?\s*[a-zA-Z]{2,6}/gi;
 
     // Phone patterns
     const PHONE_STANDARD = /(?:\+?\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
+
+    // Name patterns (for context extraction)
+    const NAME_PATTERN = /([A-Z][a-zA-Z'-]+(?:\s+[A-Z][a-zA-Z'-]+){0,2})/g;
+    const ARABIC_NAME_PATTERN = /[\u0600-\u06FF\u0750-\u077F]+(?:\s+[\u0600-\u06FF\u0750-\u077F]+){0,2}/g;
 
     // ============================================================================
     // STYLE INJECTION
@@ -98,16 +103,10 @@
     // DEEP SCAN (Auto-Scroll for Lazy Loading)
     // ============================================================================
     async function deepScan(onProgress) {
-        const totalHeight = Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight
-        );
-        const viewportHeight = window.innerHeight;
         let currentScroll = 0;
-        let lastHeight = totalHeight;
+        let lastHeight = document.body.scrollHeight;
         let unchangedCount = 0;
 
-        // Scroll to top first
         window.scrollTo(0, 0);
         await sleep(100);
 
@@ -116,22 +115,19 @@
             window.scrollTo({ top: currentScroll, behavior: 'smooth' });
             await sleep(CONFIG.SCROLL_DELAY);
 
-            // Calculate progress
             const progress = Math.min(100, Math.round((currentScroll / document.body.scrollHeight) * 100));
             if (onProgress) onProgress(progress);
 
-            // Check if new content loaded (page height changed)
             const newHeight = document.body.scrollHeight;
             if (newHeight === lastHeight) {
                 unchangedCount++;
-                if (unchangedCount > 5) break; // No more content loading
+                if (unchangedCount > 5) break;
             } else {
                 unchangedCount = 0;
                 lastHeight = newHeight;
             }
         }
 
-        // Return to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
         await sleep(300);
     }
@@ -141,27 +137,93 @@
     }
 
     // ============================================================================
-    // SCRAPING LOGIC
+    // NAME EXTRACTION (Smart Context Analysis)
+    // ============================================================================
+    function extractNameFromContext(fullText, matchValue, matchIndex) {
+        // Get text before the match
+        const startIndex = Math.max(0, matchIndex - CONFIG.NAME_CONTEXT_LENGTH);
+        const precedingText = fullText.substring(startIndex, matchIndex).trim();
+
+        // Try to find English names (Capitalized words)
+        const englishNames = precedingText.match(NAME_PATTERN);
+        if (englishNames && englishNames.length > 0) {
+            // Get the last name match (closest to email)
+            const name = englishNames[englishNames.length - 1].trim();
+            // Filter out common false positives
+            const blacklist = ['Contact', 'Email', 'Phone', 'Tel', 'Mobile', 'Address', 'Website', 'The', 'Our', 'Your', 'We', 'If', 'Please'];
+            if (!blacklist.includes(name) && name.length > 2) {
+                return name;
+            }
+        }
+
+        // Try to find Arabic names
+        const arabicNames = precedingText.match(ARABIC_NAME_PATTERN);
+        if (arabicNames && arabicNames.length > 0) {
+            return arabicNames[arabicNames.length - 1].trim();
+        }
+
+        // Try pattern: "Name: Value" or "Name <email>"
+        const colonPattern = /([^:,\n]+)[:]\s*$/;
+        const anglePattern = /([^<\n]+)\s*<\s*$/;
+
+        let match = precedingText.match(colonPattern) || precedingText.match(anglePattern);
+        if (match) {
+            const extracted = match[1].trim();
+            if (extracted.length > 1 && extracted.length < 50) {
+                return extracted;
+            }
+        }
+
+        return '';
+    }
+
+    // ============================================================================
+    // SCRAPING LOGIC (Enhanced with Name Extraction)
     // ============================================================================
     function scrapeData() {
         const content = document.body.innerText;
+        const leads = [];
+        const seenValues = new Set();
 
-        // Find standard emails
-        let emails = content.match(EMAIL_STANDARD) || [];
+        // Process standard emails
+        let match;
+        const emailRegex = new RegExp(EMAIL_STANDARD.source, 'g');
+        while ((match = emailRegex.exec(content)) !== null) {
+            const email = match[0].toLowerCase().trim();
+            if (!seenValues.has(email)) {
+                seenValues.add(email);
+                const name = extractNameFromContext(content, email, match.index);
+                leads.push({ type: 'email', value: email, name: name });
+            }
+        }
 
-        // Find obfuscated emails and normalize them
-        const obfuscatedMatches = content.match(EMAIL_OBFUSCATED) || [];
-        const normalizedObfuscated = obfuscatedMatches.map(normalizeEmail);
-        emails = [...emails, ...normalizedObfuscated];
+        // Process obfuscated emails
+        const obfuscatedRegex = new RegExp(EMAIL_OBFUSCATED.source, 'gi');
+        while ((match = obfuscatedRegex.exec(content)) !== null) {
+            const normalized = normalizeEmail(match[0]);
+            if (!seenValues.has(normalized)) {
+                seenValues.add(normalized);
+                const name = extractNameFromContext(content, match[0], match.index);
+                leads.push({ type: 'email', value: normalized, name: name, obfuscated: true });
+            }
+        }
 
-        // Find phones
-        let phones = content.match(PHONE_STANDARD) || [];
+        // Process phones
+        const phoneRegex = new RegExp(PHONE_STANDARD.source, 'g');
+        while ((match = phoneRegex.exec(content)) !== null) {
+            const phone = match[0].trim();
+            if (!seenValues.has(phone)) {
+                seenValues.add(phone);
+                const name = extractNameFromContext(content, phone, match.index);
+                leads.push({ type: 'phone', value: phone, name: name });
+            }
+        }
 
-        // Clean and deduplicate
-        emails = [...new Set(emails.map(e => e.toLowerCase().trim()))];
-        phones = [...new Set(phones.map(p => p.trim()))];
+        // Also return legacy format for backward compatibility
+        const emails = leads.filter(l => l.type === 'email').map(l => l.value);
+        const phones = leads.filter(l => l.type === 'phone').map(l => l.value);
 
-        return { emails, phones };
+        return { leads, emails, phones };
     }
 
     function normalizeEmail(obfuscated) {
@@ -184,7 +246,6 @@
             NodeFilter.SHOW_TEXT,
             {
                 acceptNode: (node) => {
-                    // Skip script, style, and already highlighted elements
                     const parent = node.parentElement;
                     if (!parent) return NodeFilter.FILTER_REJECT;
                     if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(parent.tagName)) {
@@ -204,14 +265,10 @@
             nodesToProcess.push(node);
         }
 
-        let highlightedEmails = 0;
-        let highlightedPhones = 0;
-
         nodesToProcess.forEach(textNode => {
             const text = textNode.textContent;
             if (!text || text.trim().length === 0) return;
 
-            // Check for matches
             const emailMatches = text.match(EMAIL_STANDARD) || [];
             const phoneMatches = text.match(PHONE_STANDARD) || [];
             const obfuscatedMatches = text.match(EMAIL_OBFUSCATED) || [];
@@ -220,48 +277,38 @@
                 return;
             }
 
-            // Create highlighted version
             let html = escapeHtml(text);
 
-            // Highlight emails
             emailMatches.forEach(email => {
                 const escapedEmail = escapeHtml(email);
                 const regex = new RegExp(escapeRegex(escapedEmail), 'g');
                 html = html.replace(regex,
                     `<span class="${CONFIG.HIGHLIGHT_CLASS} ${CONFIG.HIGHLIGHT_EMAIL_CLASS}" data-lme-type="📧 Email">${escapedEmail}</span>`
                 );
-                highlightedEmails++;
             });
 
-            // Highlight obfuscated emails
             obfuscatedMatches.forEach(email => {
                 const escapedEmail = escapeHtml(email);
                 const regex = new RegExp(escapeRegex(escapedEmail), 'gi');
                 html = html.replace(regex,
-                    `<span class="${CONFIG.HIGHLIGHT_CLASS} ${CONFIG.HIGHLIGHT_EMAIL_CLASS}" data-lme-type="📧 Email (obfuscated)">${escapedEmail}</span>`
+                    `<span class="${CONFIG.HIGHLIGHT_CLASS} ${CONFIG.HIGHLIGHT_EMAIL_CLASS}" data-lme-type="📧 Obfuscated">${escapedEmail}</span>`
                 );
-                highlightedEmails++;
             });
 
-            // Highlight phones
             phoneMatches.forEach(phone => {
                 const escapedPhone = escapeHtml(phone);
                 const regex = new RegExp(escapeRegex(escapedPhone), 'g');
                 html = html.replace(regex,
                     `<span class="${CONFIG.HIGHLIGHT_CLASS} ${CONFIG.HIGHLIGHT_PHONE_CLASS}" data-lme-type="📞 Phone">${escapedPhone}</span>`
                 );
-                highlightedPhones++;
             });
 
-            // Replace text node with highlighted HTML
             if (html !== escapeHtml(text)) {
                 const span = document.createElement('span');
                 span.innerHTML = html;
                 textNode.parentNode.replaceChild(span, textNode);
             }
         });
-
-        return { highlightedEmails, highlightedPhones };
     }
 
     function clearHighlights() {
@@ -289,17 +336,14 @@
         if (request.action === 'scanPage') {
             (async () => {
                 try {
-                    // Deep scan if requested
                     if (request.deepScan) {
                         await deepScan((progress) => {
                             chrome.runtime.sendMessage({ action: 'scanProgress', progress });
                         });
                     }
 
-                    // Scrape data
                     const results = scrapeData();
 
-                    // Highlight matches on page
                     if (request.highlight !== false) {
                         highlightMatches();
                     }
@@ -309,7 +353,7 @@
                     sendResponse({ success: false, error: error.message });
                 }
             })();
-            return true; // Keep channel open for async response
+            return true;
         }
 
         if (request.action === 'clearHighlights') {

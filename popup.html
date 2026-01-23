@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lead Extractor Pro</title>
+  <title>Lead Extractor Enterprise</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 
@@ -13,12 +13,22 @@
     <header>
       <div class="logo">
         <span class="logo-icon">🧲</span>
-        <h1>Lead Extractor <span class="badge">PRO</span></h1>
+        <h1>Lead Extractor <span class="badge">ENTERPRISE</span></h1>
       </div>
-      <p>Elite lead extraction with deep scanning</p>
     </header>
 
-    <main>
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="scan">
+        <span>🔍</span> Scan
+      </button>
+      <button class="tab" data-tab="settings">
+        <span>⚙️</span> Settings
+      </button>
+    </div>
+
+    <!-- Scan Tab -->
+    <main id="scan-tab" class="tab-content active">
       <!-- Stats -->
       <div class="stats-container">
         <div class="stat-box stat-email">
@@ -36,7 +46,7 @@
         <label class="toggle-label" for="deep-scan-toggle">
           <span class="toggle-text">
             <strong>Deep Scan</strong>
-            <small>Auto-scroll to load lazy content</small>
+            <small>Auto-scroll for lazy content</small>
           </span>
           <div class="toggle-switch">
             <input type="checkbox" id="deep-scan-toggle">
@@ -57,10 +67,13 @@
         </button>
         <div class="action-row">
           <button id="download-btn" class="secondary-btn" disabled>
-            <span class="icon">⬇️</span> Download CSV
+            <span class="icon">📊</span> Excel
+          </button>
+          <button id="sync-btn" class="accent-btn" disabled>
+            <span class="icon">☁️</span> Sync
           </button>
           <button id="clear-btn" class="danger-btn">
-            <span class="icon">🗑️</span> Clear
+            <span class="icon">🗑️</span>
           </button>
         </div>
       </div>
@@ -69,10 +82,48 @@
       <div id="status-msg" class="status"></div>
     </main>
 
+    <!-- Settings Tab -->
+    <div id="settings-tab" class="tab-content">
+      <div class="settings-section">
+        <h3>☁️ Webhook Integration</h3>
+        <p class="settings-desc">Connect to CRM, Zapier, or any webhook endpoint</p>
+
+        <div class="input-group">
+          <label for="webhook-url">Webhook URL</label>
+          <input type="url" id="webhook-url" placeholder="https://hooks.zapier.com/..." />
+        </div>
+
+        <div class="input-group">
+          <label for="webhook-name">Label (optional)</label>
+          <input type="text" id="webhook-name" placeholder="My CRM" />
+        </div>
+
+        <button id="save-settings-btn" class="primary-btn">
+          <span class="icon">💾</span> Save Settings
+        </button>
+
+        <div class="webhook-status" id="webhook-status"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>ℹ️ About</h3>
+        <p class="about-text">
+          <strong>Lead Magnet Extractor Enterprise</strong><br>
+          v3.0 • Built for professionals<br><br>
+          Features: Deep Scan, Smart Name Detection,<br>
+          Obfuscation Detection, Excel Export, Webhook Sync
+        </p>
+      </div>
+    </div>
+
     <footer>
-      <span>v2.0 • Elite Edition</span>
+      <span>v3.0 • Enterprise Edition</span>
     </footer>
   </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
   <script src="popup.js"></script>
 </body>
 
