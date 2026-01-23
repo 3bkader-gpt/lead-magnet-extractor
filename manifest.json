@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lead Magnet Extractor",
-  "version": "3.0",
+  "version": "3.0.1",
   "description": "Enterprise lead extraction with deep scanning, smart name detection, webhook integration, and Excel export.",
   "permissions": [
     "activeTab",
