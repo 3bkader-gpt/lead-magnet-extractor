@@ -1,6 +1,6 @@
 // ============================================================================
 // LEAD MAGNET EXTRACTOR - ENTERPRISE POPUP SCRIPT
-// Features: Tabs, Webhook Integration, Excel Export, Toast Notifications
+// Features: Tabs, Webhook Integration, Excel Export (SheetJS), Toast Notifications
 // ============================================================================
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -302,85 +302,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================================
-    // EXCEL EXPORT (SpreadsheetML XML Format)
+    // EXCEL EXPORT (Real binary .xlsx via SheetJS)
     // ============================================================================
     function downloadExcel(data) {
         const leads = data.leads || [];
 
-        // If using legacy format, convert to leads format
-        let rows = leads;
-        if (rows.length === 0 && (data.emails?.length || data.phones?.length)) {
-            rows = [
-                ...(data.emails || []).map(e => ({ type: 'email', value: e, name: '' })),
-                ...(data.phones || []).map(p => ({ type: 'phone', value: p, name: '' }))
-            ];
+        // Prepare data for SheetJS
+        let rows = [];
+
+        if (leads.length > 0) {
+            rows = leads.map(l => ({
+                "Type": l.type === 'email' ? '📧 Email' : '📞 Phone',
+                "Value": l.value,
+                "Name": l.name || ''
+            }));
+        } else if (data.emails?.length || data.phones?.length) {
+            // Legacy data support
+            if (data.emails) data.emails.forEach(e => rows.push({ "Type": "📧 Email", "Value": e, "Name": "" }));
+            if (data.phones) data.phones.forEach(p => rows.push({ "Type": "📞 Phone", "Value": p, "Name": "" }));
         }
 
-        // Create SpreadsheetML XML
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-  <Styles>
-    <Style ss:ID="header">
-      <Font ss:Bold="1" ss:Size="12"/>
-      <Interior ss:Color="#2563EB" ss:Pattern="Solid"/>
-      <Font ss:Color="#FFFFFF" ss:Bold="1"/>
-    </Style>
-    <Style ss:ID="email">
-      <Interior ss:Color="#DBEAFE" ss:Pattern="Solid"/>
-    </Style>
-    <Style ss:ID="phone">
-      <Interior ss:Color="#DCFCE7" ss:Pattern="Solid"/>
-    </Style>
-  </Styles>
-  <Worksheet ss:Name="Leads">
-    <Table>
-      <Column ss:Width="80"/>
-      <Column ss:Width="200"/>
-      <Column ss:Width="150"/>
-      <Row>
-        <Cell ss:StyleID="header"><Data ss:Type="String">Type</Data></Cell>
-        <Cell ss:StyleID="header"><Data ss:Type="String">Value</Data></Cell>
-        <Cell ss:StyleID="header"><Data ss:Type="String">Name</Data></Cell>
-      </Row>`;
+        // Create Worksheet
+        // @ts-ignore
+        const ws = XLSX.utils.json_to_sheet(rows);
 
-        rows.forEach(row => {
-            const styleId = row.type === 'email' ? 'email' : 'phone';
-            const typeLabel = row.type === 'email' ? '📧 Email' : '📞 Phone';
-            xml += `
-      <Row>
-        <Cell ss:StyleID="${styleId}"><Data ss:Type="String">${escapeXml(typeLabel)}</Data></Cell>
-        <Cell ss:StyleID="${styleId}"><Data ss:Type="String">${escapeXml(row.value)}</Data></Cell>
-        <Cell ss:StyleID="${styleId}"><Data ss:Type="String">${escapeXml(row.name || '')}</Data></Cell>
-      </Row>`;
-        });
+        // Set Column Widths
+        const wscols = [
+            { wch: 15 }, // Type
+            { wch: 35 }, // Value
+            { wch: 25 }  // Name
+        ];
+        ws['!cols'] = wscols;
 
-        xml += `
-    </Table>
-  </Worksheet>
-</Workbook>`;
+        // Create Workbook
+        // @ts-ignore
+        const wb = XLSX.utils.book_new();
+        // @ts-ignore
+        XLSX.utils.book_append_sheet(wb, ws, "Leads");
 
-        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `leads_${getFormattedDate()}.xls`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    function escapeXml(str) {
-        if (!str) return '';
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&apos;');
+        // Write file
+        // @ts-ignore
+        XLSX.writeFile(wb, `leads_${getFormattedDate()}.xlsx`);
     }
 
     function getFormattedDate() {
