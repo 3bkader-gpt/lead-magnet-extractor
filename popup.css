@@ -60,10 +60,9 @@ header {
 }
 
 .logo-icon {
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
-  display: block;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
 
