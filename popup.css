@@ -60,10 +60,9 @@ header {
 }
 
 .logo-icon {
-  display: inline-block;
   font-size: 32px;
-  color: #2563eb;
-  line-height: 1;
+  display: inline-block;
+  margin-right: 8px;
   flex-shrink: 0;
 }
 
