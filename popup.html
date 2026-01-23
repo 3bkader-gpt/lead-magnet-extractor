@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lead Extractor Enterprise</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 
@@ -12,11 +13,10 @@
   <div class="container">
     <header>
       <div class="logo">
-        <svg width="32" height="32" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="logo-icon">
-          <rect width="48" height="48" fill="#2563eb" rx="6"/>
-          <circle cx="36" cy="12" r="10" fill="#ff5722"/>
-          <path d="M12 24 L36 24 L36 40 L12 40 Z" fill="#ffffff" opacity="0.9"/>
-        </svg>
+        <!-- Font Awesome Icon (Primary) -->
+        <i class="fas fa-magnet logo-icon logo-icon-fa"></i>
+        <!-- Emoji Fallback (Hidden by default, shown if FA fails) -->
+        <span class="logo-icon logo-icon-emoji">🧲</span>
         <h1>Lead Extractor <span class="badge">ENTERPRISE</span></h1>
       </div>
     </header>
