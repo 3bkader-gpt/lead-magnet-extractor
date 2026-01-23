@@ -61,9 +61,9 @@ header {
 
 .logo-icon {
   display: inline-block;
-  width: 48px;
-  height: 48px;
-  object-fit: contain;
+  font-size: 32px;
+  color: #2563eb;
+  line-height: 1;
   flex-shrink: 0;
 }
 

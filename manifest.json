@@ -3,6 +3,9 @@
   "name": "Lead Magnet Extractor",
   "version": "3.0.1",
   "description": "Enterprise lead extraction with deep scanning, smart name detection, webhook integration, and Excel export.",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com;"
+  },
   "permissions": [
     "activeTab",
     "scripting",
