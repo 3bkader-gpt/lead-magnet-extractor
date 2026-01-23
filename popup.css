@@ -60,7 +60,11 @@ header {
 }
 
 .logo-icon {
-  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
 }
 
 header h1 {
